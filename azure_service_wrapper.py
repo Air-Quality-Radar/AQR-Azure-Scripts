@@ -1,12 +1,17 @@
 from azure.storage.table import TableService, Entity
-apikey = open('apikey','r').read()
+import os
+apikey = open(os.getenv("HOME")+'/'+'apikey','r').read()
 
 table_service = TableService(account_name='aqrstorage', account_key=apikey)
 
 config_directory = os.getenv("HOME")+"/.aqrconf"
-import os
+pollution_table = "pollution"
 if not os.path.exists(config_directory):
     os.makedirs(config_directory)
+def create_table(table):
+    table_service.create_table(table)
+def delete_table(table):
+    table_service.delete_table(table)
 def get_entities(table_name, filter="",num_results=None):
     return table_service.query_entities(table_name, filter = filter,num_results = None)
 
@@ -37,12 +42,16 @@ def set_timestamp(lat,lon,ts):
     f.write(','.join(map(str,ts)))
     f.close()
 
-def upload_pollution(row):
-    current_latest_timestamp = get_latest_timestamp(row[3],row[4])
-    if current_latest_timestamp and is_timestamp_earlier(row[:3],current_latest_timestamp):
-        return
-    heading = "PartitionKey,RowKey,Year,Days,Minutes,Latitude,Longitude,NOx,PM10,PM25".split(',')
+def upload_pollution(row,force = False):
+    if not force:
+        current_latest_timestamp = get_latest_timestamp(row[3],row[4])
+        if current_latest_timestamp and is_timestamp_earlier(row[:3],current_latest_timestamp):
+            return
+    heading = "PartitionKey,RowKey,SearchTimestamp,Year,Days,Minutes,Latitude,Longitude,NOx,PM10,PM25".split(',')
+    from datetime import datetime,timedelta
+    timestamp = datetime(int(row[0]),1,1) + timedelta(days = int(row[1]), minutes=int(row[2]))
+    timestamp = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
     partition_key = row[0]
     row_key = ",".join(map(str,row[:5]))
-    upload_row("rawpollution",[partition_key,row_key]+row,heading)
+    upload_row(pollution_table,[partition_key,row_key,timestamp]+row,heading)
     set_timestamp(row[3],row[4],row[:3])
