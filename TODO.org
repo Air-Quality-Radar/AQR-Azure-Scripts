@@ -1,0 +1,6 @@
+* Todos
+** [#A] Cron job download pollution
+** [#A] pollution historical data
+** [#A] cron job download weather
+** [#A] weather historical data
+** [#B] prediction 

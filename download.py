@@ -44,12 +44,32 @@ def aqe(start,end):
     params["action"] = "download"
     params["submit"] = "Download+Data"
     response = requests.get(url,params = params)
-    for line in response.text:
+    for line in response.text.split('\n'):
         result = re.search("(http://.+?\.csv)",line)
         if result:
-            print result.group(0)
+            url =  result.group(0)
             break
+    response = urllib2.urlopen(url)
+    reader = csv.reader(response)
+    next(reader,None)
+    next(reader,None)
+    locations = next(reader,None)
+    headings = next(reader,None)
+    location_short = dict()
+    location_short["Cambridge Parker Street"] = "parker"
+    location_short["Cambridge Gonville Place"] = "gonville"
+    location_short["Cambridge Newmarket Road"] = "newmarket"
+    location_short["Cambridge Montague Road"] = "montague"
 
+    # process locations
+    for i in range(1,len(locations)):
+        if locations[i] in location_short:
+            locations[i] = location_short[locations[i]]
+        else:
+            locations[i] = locations[i-1]
+    print locations,headings
+    for row in reader:
+        print row
 
 aqe(datetime(2017,2,27),datetime(2017,2,28))
 
@@ -126,4 +146,3 @@ def rail(start,end):
         # cn't remember which monitor id is this
         row = row[:-1]
         timestamp = datetime.strptime(row[0],"%Y-%m-%d %H:%M:%S")
-rail(datetime(2017,2,28),datetime(2017,2,28))
