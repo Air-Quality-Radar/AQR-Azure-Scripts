@@ -1,7 +1,12 @@
 * Todos
-** [#A] Cron job download pollution
-** [#A] add datetime field
-** [#A] pollution historical data
-** [#A] cron job download weather
-** [#A] weather historical data
+** DONE [#A] add datetime field
+   CLOSED: [2017-02-28 Tue 22:48]
+** DONE [#A] Cron job download pollution
+   CLOSED: [2017-03-01 Wed 01:23]
+** DONE [#A] pollution historical data
+   CLOSED: [2017-03-01 Wed 14:20]
+** DONE [#A] cron job download weather
+   CLOSED: [2017-03-01 Wed 01:23]
+** DONE [#A] weather historical data
+   CLOSED: [2017-03-01 Wed 14:20]
 ** [#B] prediction 
