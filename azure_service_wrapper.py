@@ -6,6 +6,7 @@ table_service = TableService(account_name='aqrstorage', account_key=apikey)
 
 config_directory = os.getenv("HOME")+"/.aqrconf"
 pollution_table = "pollution"
+weather_table = "weather"
 if not os.path.exists(config_directory):
     os.makedirs(config_directory)
 def create_table(table):
@@ -14,7 +15,8 @@ def delete_table(table):
     table_service.delete_table(table)
 def get_entities(table_name, filter="",num_results=None):
     return table_service.query_entities(table_name, filter = filter,num_results = None)
-
+def delete_entity(table,PartitionKey, RowKey):
+    table_service.delete_entity(table,PartitionKey,RowKey)
 def upload_row(table_name,row,heading):
     assert(len(row) == len(heading))
     entity = dict()
@@ -43,6 +45,7 @@ def set_timestamp(lat,lon,ts):
     f.close()
 
 def upload_pollution(row,force = False):
+    force = os.getenv("FORCE")
     if not force:
         current_latest_timestamp = get_latest_timestamp(row[3],row[4])
         if current_latest_timestamp and is_timestamp_earlier(row[:3],current_latest_timestamp):
@@ -55,3 +58,20 @@ def upload_pollution(row,force = False):
     row_key = ",".join(map(str,row[:5]))
     upload_row(pollution_table,[partition_key,row_key,timestamp]+row,heading)
     set_timestamp(row[3],row[4],row[:3])
+
+def upload_weather(row,force = False):
+    force = os.getenv("FORCE")
+    if not force:
+        current_latest_timestamp = get_latest_timestamp("cl","weather")
+        if current_latest_timestamp and is_timestamp_earlier(row[:3],current_latest_timestamp):
+            return
+    heading = "PartitionKey,RowKey,SearchTimestamp,Year,Days,Minutes,Temperature,Humidity,Pressure,WindSpeed,WindDir,Rain".split(',')
+
+    from datetime import datetime,timedelta
+    timestamp = datetime(int(row[0]),1,1) + timedelta(days = int(row[1]), minutes=int(row[2]))
+    timestamp = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+    partition_key = row[0]
+    row_key = ",".join(map(str,row[:3]))
+
+    upload_row(weather_table,[partition_key,row_key,timestamp]+row,heading)
+    set_timestamp("cl","weather",row[:3])

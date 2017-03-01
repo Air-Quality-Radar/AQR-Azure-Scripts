@@ -1,6 +1,6 @@
 import requests
 import urllib2
-from datetime import datetime,date
+from datetime import datetime,date,timedelta
 import csv
 
 gps = dict()
@@ -33,7 +33,7 @@ def defra(year):
             # some malformed row
             print "Row Malformed"
             pass
-    return result
+    return sorted(result,key = lambda x: map(int,x[:3]))
 def aqe(start,end):
     import re
     url = "http://www.airqualityengland.co.uk/local-authority/data.php"
@@ -70,7 +70,7 @@ def aqe(start,end):
             locations[i] = location_short[locations[i]]
         else:
             locations[i] = locations[i-1]
-    print locations,headings
+    # print locations,headings
     for row in reader:
         if len(row) < 2:
             continue
@@ -90,8 +90,39 @@ def aqe(start,end):
                 data[loc][index] = v
         for loc in data:
             result.append(std_time(timestamp) + list(gps[loc])+data[loc])
-    return result
-# print aqe(datetime(2017,2,27),datetime(2017,2,28))
+    return sorted(result,key = lambda x: map(int,x[:3]))
+
+def cl(date):
+    def accept(timestamp):
+        # ignore half-an-hourly things
+        return abs(timestamp.minute - 30) >= 20
+    def standard(timestamp):
+        if timestamp.minute > 30:
+            offset = 60 - timestamp.minute
+        else:
+            offset = - timestamp.minute
+        return timestamp + timedelta(minutes = offset)
+    url = "https://www.cl.cam.ac.uk/research/dtg/weather/daily-text.cgi?" + date.strftime("%Y-%m-%d")
+    response = requests.get(url)
+    last_rain = 0.00
+    result = []
+    for line in response.text.split('\n'):
+        if not line or line[0] == '#':
+            continue
+        line = line.split('\t')
+        hour,minute = map(int,line[0].split(':'))
+        timestamp = date.replace(hour=hour,minute=minute)
+        if not accept(timestamp):
+            continue
+        timestamp = standard(timestamp)
+        _,temp,humid,_,press,windsp,winddir,_,rain,_,_ = line
+        rain = str(float(rain) - last_rain)
+        result.append(std_time(timestamp)+[temp,humid,press,windsp,winddir,rain])
+    return sorted(result,key = lambda x: map(int,x[:3]))
+
+if __name__ == "__main__":
+    # print aqe(datetime(2017,2,27),datetime(2017,2,28))
+    print cl(datetime(2017,1,1))
 
 
 
