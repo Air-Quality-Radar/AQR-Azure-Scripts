@@ -6,9 +6,9 @@ import csv
 gps = dict()
 gps['gonville'] = (5220085,129144)
 gps['defra'] = (52202370,124456)
-gps['newmarket'] = (52211353,191325)
+gps['newmarket'] = (52208430,141521)
 gps['montague'] = (52214239,136262)
-gps['rail'] = (52194075,137125)
+# gps['rail'] = (52194075,137125)
 gps['parker'] = (52204644,125857)
 
 def std_time(t):
@@ -24,6 +24,8 @@ def defra(year):
         next(reader,None)
     result = []
     for row in reader:
+        if not "".join(row[-3:]):
+            continue
         try:
             timestamp = row[0] + ' ' + fix_hour(row[1])
             timestamp = datetime.strptime(timestamp,"%d-%m-%Y %H:%M")
@@ -119,10 +121,27 @@ def cl(date):
         rain = str(float(rain) - last_rain)
         result.append(std_time(timestamp)+[temp,humid,press,windsp,winddir,rain])
     return sorted(result,key = lambda x: map(int,x[:3]))
+def metoffice():
+    import os
+    api_key = open(os.getenv("HOME")+"/"+"metoffice_key",'r').read()
+    url = "http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/99123?res=3hourly&key=" + api_key
+    response = requests.get(url)
+    import json
+    response = json.loads(response.text)
+    result = []
+    for rep in response["SiteRep"]["DV"]["Location"]["Period"]:
+        timestamp_start = datetime.strptime(rep["value"],"%Y-%m-%dZ")
+        for row in rep["Rep"]:
+            timestamp = timestamp_start + timedelta(minutes = int(row['$']))
+            # we need to convert units for windspeed from mph to knots
+            row["S"] = str(float(row["S"]) * 0.868976)
+            result.append(std_time(timestamp) + [row["T"],row["H"],row["S"],row["D"]])
+    return result
 
 if __name__ == "__main__":
-    # print aqe(datetime(2017,2,27),datetime(2017,2,28))
-    print cl(datetime(2017,1,1))
+    # print aqe(datetime.now()-timedelta(2),datetime.now())
+    # print cl(datetime(2017,1,1))
+    print metoffice()
 
 
 
