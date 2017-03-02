@@ -10,7 +10,7 @@ do_upload['cl'] = True
 
 start_time = dict()
 end_time = dict()
-start_time['aqe'] = datetime.now()
+start_time['aqe'] = datetime.now() - timedelta(1)
 end_time['aqe'] = datetime(1990,1,1)
 start_time['cl'] = start_time['aqe']
 end_time['cl'] = end_time['aqe']
