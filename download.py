@@ -14,8 +14,7 @@ gps['parker'] = (52204644,125857)
 def std_time(t):
     return map(str, [t.year,(t.date()-date(t.year,1,1)).days,t.hour * 60 + t.minute])
 
-def fix_hour(s):
-    return str(int(s[:2])%24) + s[2:]
+
 def defra(year):
     url = "https://uk-air.defra.gov.uk/data_files/site_data/CAM_" + str(year) + ".csv"
     response = urllib2.urlopen(url)
@@ -27,8 +26,8 @@ def defra(year):
         if not "".join(row[-3:]):
             continue
         try:
-            timestamp = row[0] + ' ' + fix_hour(row[1])
-            timestamp = datetime.strptime(timestamp,"%d-%m-%Y %H:%M")
+            hours,minutes = map(int,row[1].split(':'))
+            timestamp = datetime.strptime(row[0],"%d-%m-%Y") + timedelta(hours=hours,minutes=minutes)
             result.append(std_time(timestamp)+list(gps['defra'])+[row[-3],'',''])
         except ValueError:
             # datetime format wrong
@@ -76,8 +75,8 @@ def aqe(start,end):
     for row in reader:
         if len(row) < 2:
             continue
-        timestamp = row[0] + ' ' + fix_hour(row[1])
-        timestamp = datetime.strptime(timestamp,"%d/%m/%Y %H:%M:%S")
+        hours,minutes = map(int,row[1].split(':'))[:2]
+        timestamp = datetime.strptime(row[0],"%d/%m/%Y") + timedelta(hours=hours,minutes=minutes)
         heading_to_index = {"NOXasNO2":0,"PM10":1,"PM25":2}
         # data is keyed by short location string and contains a length-3
         # list of the data above
@@ -121,6 +120,7 @@ def cl(date):
         rain = str(float(rain) - last_rain)
         result.append(std_time(timestamp)+[temp,humid,press,windsp,winddir,rain])
     return sorted(result,key = lambda x: map(int,x[:3]))
+
 def metoffice():
     import os
     api_key = open(os.getenv("HOME")+"/"+"metoffice_key",'r').read()
