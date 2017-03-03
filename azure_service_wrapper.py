@@ -18,7 +18,7 @@ def create_table(table):
 def delete_table(table):
     table_service.delete_table(table)
 def get_entities(table_name, filter="",num_results=None):
-    return table_service.query_entities(table_name, filter = filter,num_results = None)
+    return table_service.query_entities(table_name, filter = filter,num_results = num_results)
 def delete_entity(table,PartitionKey, RowKey):
     table_service.delete_entity(table,PartitionKey,RowKey)
 def upload_row(table_name,row,heading):
@@ -61,7 +61,7 @@ def set_timestamp(cache_key,ts):
 def to_timestamp(year,days,minutes):
     return datetime(int(year),1,1) + timedelta(days=int(days),minutes=int(minutes))
 
-def upload_row_wrapper(table, row, force, heading, cache_key,row_keys)
+def upload_row_wrapper(table, row, force, heading, cache_key,row_keys):
     if not force:
         force = os.getenv("FORCE")
     if not force:
