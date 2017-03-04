@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 from download import gps,std_time
 from datetime import datetime,timedelta
-from azure_service_wrapper import *
+import AQR
+import azure_service_wrapper as asw
 def get_prediction(input_row):
     import urllib2
     import json 
@@ -53,7 +55,7 @@ def get_next_row(current_row,weather):
             missing[i] = True
             current_row[i] = '0'
 
-    current_time = to_timestamp(*current_row[:3])
+    current_time = AQR.to_timestamp(*current_row[:3])
     location = current_row[3:5]
     next_time = current_time + timedelta(hours=1)
 
@@ -62,7 +64,7 @@ def get_next_row(current_row,weather):
 
     def select_cols(weather_row):
         return [weather_row["Temperature"],weather_row["Humidity"],weather_row["WindSpeed"]]
-    input_row = std_time(next_time) + location + select_cols(current_weather) + current_row[5:] + select_cols(next_weather) + [0,0,0]
+    input_row = AQR.std_time(next_time) + location + select_cols(current_weather) + current_row[5:] + select_cols(next_weather) + [0,0,0]
     # print input_row
     output_row = get_prediction(input_row)
     for i,v in enumerate(missing):
@@ -76,32 +78,36 @@ def generate_prediction(until_time):
 
     weather_start = datetime.now()
     for lat,lon in gps.values():
-        last_uploaded = to_timestamp(*get_latest_timestamp(lat,lon))
+        last_uploaded = AQR.to_timestamp(*AQR.get_latest_timestamp(str(lat)+str(lon)))
         if last_uploaded < weather_start:
             weather_start = last_uploaded
         # print last_uploaded,weather_start
-    weather_end = to_timestamp(*get_latest_timestamp("cl","weather"))
+    weather_end = AQR.to_timestamp(*AQR.get_latest_timestamp("clweather"))
     assert(weather_start < weather_end)
 
-    weather_raw = get_weather(weather_start,weather_end)
+    weather_raw = AQR.get_weather(weather_start,weather_end)
     weather = dict()
     for row in weather_raw:
-        timestamp = datetime.strptime(row["SearchTimestamp"],"%Y-%m-%dT%H:%M:%SZ")
+        timestamp = AQR.from_search_timestamp(row["SearchTimestamp"])
         weather[timestamp] = row
+        print timestamp
 
+    # print weather_end,weather_start
     for lat,lon in gps.values():
-        last_uploaded = to_timestamp(*get_latest_timestamp(lat,lon))
+        last_uploaded = AQR.to_timestamp(*AQR.get_latest_timestamp(str(lat)+str(lon)))
         if last_uploaded >= weather_end:
             continue
-        last_row = get_entities(pollution_table,"SearchTimestamp eq '" + last_uploaded.strftime("%Y-%m-%dT%H:%M:%SZ") + "' and Latitude eq " + str(lat))
+        last_row = asw.get_entities(AQR.pollution_table,"SearchTimestamp eq '" + AQR.to_search_timestamp(last_uploaded) + "' and Latitude eq " + str(lat))
         for row in last_row:
             last_row = row
             break
-        current_row = std_time(last_uploaded) + [lat,lon] + [last_row["PM10"],last_row["PM25"],last_row["NOx"]]
-        while to_timestamp(*current_row[:3]) < weather_end:
+        else:
+            print "Empty!"
+            return
+        current_row = AQR.std_time(last_uploaded) + [lat,lon] + [last_row["PM10"],last_row["PM25"],last_row["NOx"]]
+        while AQR.to_timestamp(*current_row[:3]) < weather_end:
             current_row = get_next_row(current_row,weather)
-            print current_row
-            upload_pollution(current_row,table="prediction")
+            AQR.upload_pollution(current_row[:-3] + [current_row[-1]]+current_row[-3:-1],table="prediction")
 
 
 

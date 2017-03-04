@@ -1,8 +1,9 @@
-from download import *
-from azure_service_wrapper import *
+import download as dl
+import AQR
 from datetime import datetime,timedelta
 from urllib2 import HTTPError
 
+## this file is not refactored since it is only used once
 do_upload = dict()
 do_upload['defra'] = True
 do_upload['aqe'] = True
@@ -29,9 +30,9 @@ def main():
         for i in range(2017,1990,-1):
             try:
                 print "Starting upload DEFRA year " + str(i)
-                data = defra(i)
+                data = dl.defra(i)
                 for row in data:
-                    upload_pollution(row,force=True)
+                    AQR.upload_pollution(row,force=True)
                 print "Done. " + str(len(data)) + " records uploaded"
             except HTTPError:
                 print "No more data. Last year " + str(i)
@@ -42,12 +43,12 @@ def main():
         while cur_time > end_time['aqe']:
             if cur_time.day == 1:
                 log(cur_time.strftime("%Y-%m") + " finished. ") 
-            data = aqe(cur_time + timedelta(-1), cur_time)
+            data = dl.aqe(cur_time + timedelta(-1), cur_time)
             if not data:
                 print "No more data. Last data row at " + cur_time.__str__()
                 break
             for row in data:
-                upload_pollution(row,force=True)
+                AQR.upload_pollution(row,force=True)
             cur_time += timedelta(-1)
 
     if do_upload['cl']:
@@ -60,10 +61,10 @@ def main():
             try:
                 if cur_time.day == 1:
                     log(cur_time.strftime("%Y-%m") + " finished. ") 
-                data = cl(cur_time)
+                data = dl.cl(cur_time)
                 current_missing = 0
                 for row in data:
-                    upload_weather(row,force=True)
+                    AQR.upload_weather(row,force=True)
             except ValueError:
                 current_missing += 1
                 log(cur_time.strftime("%Y-%m-%d") + " missing. Missing count " + str(current_missing))
