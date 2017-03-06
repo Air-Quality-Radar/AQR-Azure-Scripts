@@ -145,8 +145,9 @@ def mul_with_null(a,b):
         return a * b
     except ValueError:
         return ""
-        pass
-def upload_hourly_row(loc,avgs,date):
+
+# start_time is set to prevent the day prediction service to override the hourly prediction service
+def upload_hourly_row(loc,avgs,date, start_time = None):
     ratios = avg.averages[loc]
     for minutes in range(0,60*24,60):
         cur_pollution = dict()
@@ -154,6 +155,10 @@ def upload_hourly_row(loc,avgs,date):
         for p in AQR.pollutants:
             cur_pollution[p] = mul_with_null(avgs[p] , ratios[p][minutes])
         cur_row = map(str,AQR.std_time(date)[:2] + [minutes] + list(loc) + [cur_pollution["NOx"],cur_pollution["PM10"],cur_pollution["PM25"]])
+        if start_time:
+            current_time = AQR.to_timestamp(*cur_row[:3])
+            if current_time < start_time:
+                return
         AQR.upload_pollution(cur_row,force=True,table="prediction")
 
 def generate_daily_prediction(start_time):
@@ -173,7 +178,7 @@ def generate_daily_prediction(start_time):
             cur_pollution = get_next_day_row(dummy_row,cur_day,loc,previous_day_weather,cur_day_weather)[-3:]
             # print cur_pollution
             cur_pollution = {k:v for k,v in zip(["PM10","PM25","NOx"],cur_pollution)}
-            upload_hourly_row(loc,cur_pollution,cur_day)
+            upload_hourly_row(loc,cur_pollution,cur_day,start_time)
             cur_day_pollution[loc] = cur_pollution
         previous_day_pollution = cur_day_pollution
         previous_day_weather = cur_day_weather
