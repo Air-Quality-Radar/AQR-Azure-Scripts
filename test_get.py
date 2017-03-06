@@ -6,5 +6,5 @@ import azure_service_wrapper as asw
 #     print [row['SearchTimestamp'],row['NOx'],row['PM10'],row['PM25'],row['Latitude']]
 
 
-for row in asw.get_entities("prediction",filter="Year eq '2017' and Days ge '67'"):
+for row in asw.get_entities("pollution",filter="Year eq '2017' and Days eq '57'"):
     print [row['SearchTimestamp'],row['NOx'],row['PM10'],row['PM25'],row['Latitude']]

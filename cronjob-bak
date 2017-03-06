@@ -1,1 +1,2 @@
-30 */1 * * * /home/alpha/AQR-Azure/upload.py 1>>/home/alpha/upload_log 2>>/ho
+30 */1 * * * /home/alpha/AQR-Azure/upload.py 1>>/home/alpha/upload_log 2>>/home/alpha/upload_error
+45 */1 * * * /home/alpha/AQR-Azure/prediction.py 1>>/home/alpha/prediction_log 2>>/home/alpha/prediction_error
